@@ -38,8 +38,10 @@ namespace DiscordGameStubWriter {
 		static IntPtr WinDesktop;
 		
 		static string currentPath = AppDomain.CurrentDomain.BaseDirectory;
-		static string steamRoot = @"C:\Program Files (x86)\Steam\steamapps\common"; // Maybe use a prefs file for this?
+		static string steamRoot = @"C:\Program Files (x86)\Steam\steamapps\common"; // Gets overwritten later if we can find a prefs file
+		static System.IO.StreamReader steamRootPrefFile;
 		static bool isVisible = true;
+		static string newTitle;
 		
 		static void Main(string[] args) {
 			notifyIcon = new NotifyIcon();
@@ -48,29 +50,33 @@ namespace DiscordGameStubWriter {
 			notifyIcon.Visible = true;
 			notifyIcon.Click +=new System.EventHandler(VisibilityToggle);
 			
+			try {
+				steamRootPrefFile = new System.IO.StreamReader("steamroot.txt");
+				steamRoot = steamRootPrefFile.ReadToEnd();
+			} catch(Exception e) {
+				string thereIsProbablyALessStupidWayToShutThisBuildWarningUpButIDoNotKnowIt = e.Message;				
+				notifyIcon.ShowBalloonTip(5000,"\"steamroot.txt\" is missing", "Defaulting the userPath to \""+steamRoot+"\"",ToolTipIcon.Info); // I like how the timeout is deprecated but the method doesn't take an input without it.
+			}
+			
 			Task.Factory.StartNew(Run);
 			
 			processHandle = Process.GetCurrentProcess().MainWindowHandle;
 			WinShell = GetShellWindow();
 			WinDesktop = GetDesktopWindow();
-
+			
 			Application.Run();
 		} // End Main
 		
         static void Run() {
-			//Console.WriteLine(currentPath);
-			//Console.WriteLine(steamRoot);
-			//Console.WriteLine(new System.IO.DirectoryInfo(steamRoot).Name);
-   
-			// Main does some prep and calls NewGame, NewGame will call itself until the user exits the program.
+			// Run does some prep and calls NewGame, NewGame will call itself until the user exits the program.
 			Console.ForegroundColor = ConsoleColor.Green;
 			Console.BackgroundColor = ConsoleColor.Black;
 			Console.Title = "Discord Stub Writer";
 			Console.Write("Currently playing: \nPress enter to send a game to Discord or leave blank to exit.\n\nNew game: ");
-			string newtitle = Console.ReadLine();
-			if (newtitle != "") {
-				Console.Title = newtitle+" - Discord Stub Writer";
-				NewGame(newtitle);
+			ReadPath(Console.ReadLine());
+			if (newTitle != "") {
+				Console.Title = newTitle+" - Discord Stub Writer";
+				NewGame(newTitle);
 			} else {
 				Abort();
 			}
@@ -101,7 +107,7 @@ namespace DiscordGameStubWriter {
 			Console.ForegroundColor = ConsoleColor.Green;
 			Console.BackgroundColor = ConsoleColor.Black;
 			Console.Write("Currently playing: "+gametitle+"\nPress enter to send a game to Discord or leave blank to exit.\n\nNew game: ");
-			string newtitle = Console.ReadLine();
+			ReadPath(Console.ReadLine());
 			
 			// File and folder cleanup below this comment
 			Console.Clear();
@@ -133,13 +139,24 @@ namespace DiscordGameStubWriter {
 				Abort();
 			}
 			
-			if (newtitle != "") {
-				Console.Title = newtitle+" - Discord Stub Writer";
-				NewGame(newtitle);
+			if (newTitle != "") {
+				Console.Title = newTitle+" - Discord Stub Writer";
+				NewGame(newTitle);
 			} else {
 				Abort();
 			}
 		} // End NewGame
+		
+		static void ReadPath(string userPath){			
+			if (userPath.Equals("")) {
+				newTitle = userPath;
+			} else if (userPath.IndexOfAny(System.IO.Path.GetInvalidFileNameChars()) != -1) {
+				Console.Write("\nThat doesn't look like a valid folder name.\nDiscord reads the game's title from the folder name, so avoid things like\nslashes and colons.\n\nNew game: ");
+				ReadPath(Console.ReadLine());
+			} else {
+				newTitle = userPath;
+			}
+		} // End ReadPath
 		
 		static void Abort(){
 			notifyIcon.Visible = false;
