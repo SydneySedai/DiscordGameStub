@@ -147,7 +147,7 @@ namespace DiscordGameStubWriter {
 			}
 		} // End NewGame
 		
-		static void ReadPath(string userPath){			
+		static void ReadPath(string userPath){
 			if (userPath.Equals("")) {
 				newTitle = userPath;
 			} else if (userPath.IndexOfAny(System.IO.Path.GetInvalidFileNameChars()) != -1) {
@@ -156,6 +156,7 @@ namespace DiscordGameStubWriter {
 			} else {
 				newTitle = userPath;
 			}
+			VisibilityToggle(new object [0], new System.EventArgs ()); // Because this method is normally as an event handler and I don't feel like copy pasting the method. Instead I just pass it junk it doesn't use anyway.
 		} // End ReadPath
 		
 		static void Abort(){
